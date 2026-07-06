@@ -1,51 +1,91 @@
-from database import get_connection
+# ----- user crud --------
+import sqlite3
 
 
-def fetch_all_todos(completed: bool | None = None):
-    conn, cursor = get_connection()
-
-    if completed is None:
-        cursor.execute("SELECT id, name, completed FROM todos")
-    else:
+def insert_user(db: sqlite3.Connection, username: str, email: str):
+    cursor = db.cursor()
+    try:
         cursor.execute(
-            "SELECT id, name, completed FROM todos WHERE completed = ?", (completed,)
+            "INSERT INTO users (username,email) VALUES (?,?)", (username, email)
         )
-
-    rows = cursor.fetchall()
-    conn.close()
-
-    return [{"id": row[0], "name": row[1], "completed": bool(row[2])} for row in rows]
-
-
-def insert_todo(name: str, completed: bool):
-    conn, cursor = get_connection()
-    cursor.execute("INSERT INTO todos (name, completed) VALUES(?,?)", (name, completed))
-
-    conn.commit()
-    new_id = cursor.lastrowid  # Identify the row SQLite just created
-    conn.close()
-
-    return {"id": new_id, "name": name, "completed": completed}
+        db.commit()
+        user_id = cursor.lastrowid
+        return {"id": user_id, "username": username, "email": email}
+    except Exception:
+        return None
 
 
-def update_todo(item_id: int, name: str, completed: bool):
-    conn, cursor = get_connection()
-    cursor.execute(
-        "UPDATE todos SET name = ?, completed = ? WHERE id = ?",
-        (name, completed, item_id),
-    )
-    conn.commit()
-    changes = cursor.rowcount  # Check whether a write operation had an effect
-    conn.close()
-
+def delete_user(db: sqlite3.Connection, user_id: int):
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    db.commit()
+    changes = cursor.rowcount
     return changes > 0
 
 
-def delete_todo(item_id: int):
-    conn, cursor = get_connection()
-    cursor.execute("DELETE FROM todos WHERE id = ?", (item_id,))
-    conn.commit()
-    changes = cursor.rowcount
-    conn.close()
+# -------- item crud --------
+def insert_todo(db: sqlite3.Connection, name: str, completed: bool, user_id: int):
+    cursor = db.cursor()
+    # If the user_id doesn't exist, SQLite will instantly raise an IntegrityError
+    cursor.execute(
+        "INSERT INTO todos (name, completed, user_id) VALUES(?,?,?)",
+        (name, int(completed), user_id),
+    )
 
-    return changes > 0  # Returns trus if item deleted
+    db.commit()
+    todo_id = cursor.lastrowid  # Identify the row SQLite just created
+
+    return {
+        "id": todo_id,
+        "name": name,
+        "completed": bool(completed),
+        "user_id": user_id,
+    }
+
+
+def fetch_todos_by_user(
+    db: sqlite3.Connection, user_id: int, completed: bool | None = None
+):
+    cursor = db.cursor()
+
+    if completed is None:
+        cursor.execute("SELECT * FROM todos WHERE user_id= ?", (user_id,))
+    else:
+        cursor.execute(
+            "SELECT * FROM  todos WHERE user_id=? AND completed = ?",
+            (user_id, int(completed)),
+        )
+
+    rows = cursor.fetchall()
+    return [dict(row) for row in rows]
+
+
+def update_todo(db: sqlite3.Connection, item_id: int, name: str, completed: bool):
+    cursor = db.cursor()
+    cursor.execute(
+        "UPDATE todos SET name = ?, completed = ? WHERE id = ?",
+        (name, int(completed), item_id),
+    )
+    db.commit()
+    changes = cursor.rowcount  # Check whether a write operation had an effect
+
+    if changes > 0:
+        cursor.execute("SELECT user_id FROM todos WHERE id = ?", (item_id,))
+        row = cursor.fetchone()
+        return {
+            "id": item_id,
+            "name": name,
+            "completed": bool(completed),
+            "user_id": row["user_id"],
+        }
+
+    return None
+
+
+def delete_todo(db: sqlite3.Connection, item_id: int):
+    cursor = db.cursor()
+    cursor.execute("DELETE FROM todos WHERE id = ?", (item_id,))
+    db.commit()
+    changes = cursor.rowcount
+
+    return changes > 0  # Returns true if item deleted
