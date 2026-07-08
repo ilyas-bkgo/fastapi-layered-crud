@@ -9,13 +9,23 @@ def insert_user(
     try:
         cursor.execute(
             "INSERT INTO users (username, email, hashed_password) VALUES (?,?,?)",
-            (username, email),
+            (username, email, hashed_password),
         )
         db.commit()
         user_id = cursor.lastrowid
         return {"id": user_id, "username": username, "email": email}
-    except Exception:
+    except Exception as e:
+        print("crash reason :", e)
         return None
+
+def get_user_by_username(db: sqlite3.Connection , username: str):
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+    row = cursor.fetchone()
+
+    if row:
+        return dict(row)
+    return None
 
 
 def delete_user(db: sqlite3.Connection, user_id: int):
