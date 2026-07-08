@@ -2,11 +2,14 @@
 import sqlite3
 
 
-def insert_user(db: sqlite3.Connection, username: str, email: str):
+def insert_user(
+    db: sqlite3.Connection, username: str, email: str, hashed_password: str
+):
     cursor = db.cursor()
     try:
         cursor.execute(
-            "INSERT INTO users (username,email) VALUES (?,?)", (username, email)
+            "INSERT INTO users (username, email, hashed_password) VALUES (?,?,?)",
+            (username, email),
         )
         db.commit()
         user_id = cursor.lastrowid

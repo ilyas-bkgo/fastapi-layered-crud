@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 import crud
 import schemas
 from database import get_db
+from security import hash_password
 
 # Router initialization
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -14,7 +15,8 @@ router = APIRouter(prefix="/users", tags=["Users"])
     "/", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED
 )
 def create_user(user: schemas.UserCreate, db: sqlite3.Connection = Depends(get_db)):
-    new_user = crud.insert_user(db, user.username, user.email)
+    hashed_pwd = hash_password(user.password)
+    new_user = crud.insert_user(db, user.username, user.email, hashed_pwd)
     if not new_user:
         raise HTTPException(status_code=404, detail="Username or email already exists")
     return new_user
