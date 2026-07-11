@@ -73,31 +73,29 @@ def fetch_todos_by_user(
     return [dict(row) for row in rows]
 
 
-def update_todo(db: sqlite3.Connection, item_id: int, name: str, completed: bool):
+def update_todo(db: sqlite3.Connection, item_id: int, name: str, completed: bool, user_id: int):
     cursor = db.cursor()
     cursor.execute(
-        "UPDATE todos SET name = ?, completed = ? WHERE id = ?",
-        (name, int(completed), item_id),
+        "UPDATE todos SET name = ?, completed = ? WHERE id = ? AND user_id = ?",
+        (name, int(completed), item_id, user_id),
     )
     db.commit()
     changes = cursor.rowcount  # Check whether a write operation had an effect
 
     if changes > 0:
-        cursor.execute("SELECT user_id FROM todos WHERE id = ?", (item_id,))
-        row = cursor.fetchone()
         return {
             "id": item_id,
             "name": name,
             "completed": bool(completed),
-            "user_id": row["user_id"],
+            "user_id": user_id,
         }
 
     return None
 
 
-def delete_todo(db: sqlite3.Connection, item_id: int):
+def delete_todo(db: sqlite3.Connection, item_id: int, user_id: int):
     cursor = db.cursor()
-    cursor.execute("DELETE FROM todos WHERE id = ?", (item_id,))
+    cursor.execute("DELETE FROM todos WHERE id = ? AND user_id = ?", (item_id,user_id))
     db.commit()
     changes = cursor.rowcount
 
