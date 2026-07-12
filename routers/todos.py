@@ -1,5 +1,5 @@
 import sqlite3
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 import crud
 import schemas
 from database import get_db
@@ -13,11 +13,19 @@ router = APIRouter(prefix="/todos", tags=["Todos"])
 @router.get("/", response_model= list[schemas.ItemResponse])
 def get_todos(
     completed: bool | None = None,
+    limit: int = Query(default=10, ge=1, le=100, description="How many items to return"),
+    offset: int = Query(default=0, ge=0, description="How many items to skip"),
     db: sqlite3.Connection = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["id"]
-    return crud.fetch_todos_by_user(db, user_id=user_id, completed=completed)
+    return crud.fetch_todos_by_user(
+        db,
+        user_id=user_id,
+        completed=completed,
+        limit= limit,
+        offset= offset
+    )
 
 @router.post(
     "/", response_model=schemas.ItemResponse, status_code=status.HTTP_201_CREATED
@@ -30,9 +38,14 @@ def creat_todo(
     user_id = current_user["id"]
     try:
         return crud.insert_todo(db, item.name, item.completed, user_id)
-    except Exception:
+    except sqlite3.IntegrityError:
         raise HTTPException(
             status_code=400, detail=f"User with {user_id} does not exists"
+        )
+    except Exception as e:
+        print("route failure reason", e)
+        raise HTTPException(
+            status_code= 500, detail="Internal server error occured while creating todo"
         )
 
 

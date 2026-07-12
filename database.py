@@ -8,7 +8,8 @@ SCHEMA = [
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         email TEXT UNIQUE NOT NULL,
-        hashed_password TEXT NOT NULL
+        hashed_password TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """,
     """
@@ -17,6 +18,7 @@ SCHEMA = [
     name TEXT NOT NULL,
     completed BOOLEAN NOT NULL CHECK (completed IN (0,1)),
     user_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     );
     """,

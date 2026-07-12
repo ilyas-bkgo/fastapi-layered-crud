@@ -13,7 +13,11 @@ def insert_user(
         )
         db.commit()
         user_id = cursor.lastrowid
-        return {"id": user_id, "username": username, "email": email}
+
+        cursor.execute("SELECT id, username, email, created_at FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
     except Exception as e:
         print("crash reason :", e)
         return None
@@ -48,25 +52,31 @@ def insert_todo(db: sqlite3.Connection, name: str, completed: bool, user_id: int
     db.commit()
     todo_id = cursor.lastrowid  # Identify the row SQLite just created
 
-    return {
-        "id": todo_id,
-        "name": name,
-        "completed": bool(completed),
-        "user_id": user_id,
-    }
+    cursor.execute("SELECT id, name, completed, user_id , created_at FROM todos WHERE id = ?", (todo_id,))
+    row = cursor.fetchone()
+
+    if row:
+        todo_dict = dict(row)
+        todo_dict["completed"] = bool(todo_dict["completed"])
+        return todo_dict
+
+    return None
 
 
 def fetch_todos_by_user(
-    db: sqlite3.Connection, user_id: int, completed: bool | None = None
+    db: sqlite3.Connection, user_id: int, completed: bool | None = None,
+    limit: int = 10,
+    offset: int = 0
 ):
     cursor = db.cursor()
 
     if completed is None:
-        cursor.execute("SELECT * FROM todos WHERE user_id= ?", (user_id,))
+        cursor.execute("SELECT * FROM todos WHERE user_id= ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (user_id, limit, offset))
     else:
         cursor.execute(
-            "SELECT * FROM  todos WHERE user_id=? AND completed = ?",
-            (user_id, int(completed)),
+            "SELECT * FROM  todos WHERE user_id=? AND completed = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (user_id, int(completed), limit, offset),
         )
 
     rows = cursor.fetchall()
