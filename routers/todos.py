@@ -36,17 +36,9 @@ def creat_todo(
     current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["id"]
-    try:
-        return crud.insert_todo(db, item.name, item.completed, user_id)
-    except sqlite3.IntegrityError:
-        raise HTTPException(
-            status_code=400, detail=f"User with {user_id} does not exists"
-        )
-    except Exception as e:
-        print("route failure reason", e)
-        raise HTTPException(
-            status_code= 500, detail="Internal server error occured while creating todo"
-        )
+
+    return crud.insert_todo(db, item.name, item.completed, user_id)
+
 
 
 @router.put("/{item_id}", response_model=schemas.ItemResponse)
@@ -65,11 +57,11 @@ def update_item(
 
 
 @router.delete("/{item_id}", status_code= status.HTTP_200_OK)
-def delete_item(item_id: int,
+def delete_item(
+    item_id: int,
     db: sqlite3.Connection = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    success = crud.delete_todo(db, item_id, current_user["id"])
-    if not success:
-        raise HTTPException(status_code=404, detail="item not found or unauthorized")
-    return {"detail": "Todo deleted successfully"}
+    crud.delete_todo(db, item_id, current_user["id"])
+
+    return None

@@ -1,7 +1,7 @@
-# ----- user crud --------
+from exceptions import ItemNotFounError
 import sqlite3
 
-
+# ----- user crud --------
 def insert_user(
     db: sqlite3.Connection, username: str, email: str, hashed_password: str
 ):
@@ -107,6 +107,8 @@ def delete_todo(db: sqlite3.Connection, item_id: int, user_id: int):
     cursor = db.cursor()
     cursor.execute("DELETE FROM todos WHERE id = ? AND user_id = ?", (item_id,user_id))
     db.commit()
-    changes = cursor.rowcount
 
-    return changes > 0  # Returns true if item deleted
+    if cursor.rowcount == 0:
+        raise ItemNotFounError(item_id=item_id)
+
+    return True
