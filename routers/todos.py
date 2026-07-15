@@ -49,11 +49,18 @@ def update_item(
     current_user: dict = Depends(get_current_user)
 ):
     user_id = current_user["id"]
+    return crud.update_todo(db, item_id, updated_item.name, updated_item.completed, user_id)
 
-    todo = crud.update_todo(db, item_id, updated_item.name, updated_item.completed, user_id)
-    if not todo:
-        raise HTTPException(status_code=404, detail="Item not found or unauthorized")
-    return todo
+@router.patch("/{item_id}", response_model= schemas.ItemResponse)
+def patch_item(
+    item_id : int,
+    patch_data: schemas.ItemUpdate,
+    db: sqlite3.Connection = Depends(get_db),
+    current_user : dict = Depends(get_current_user)
+):
+    user_id = current_user["id"]
+    return crud.patch_todo(db, item_id, patch_data, user_id)
+
 
 
 @router.delete("/{item_id}", status_code= status.HTTP_200_OK)

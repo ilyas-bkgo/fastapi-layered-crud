@@ -117,3 +117,69 @@ def test_create_todo_success(client):
     assert todo_data["completed"] is False
     assert "id" in todo_data
     assert "created_at" in todo_data
+
+
+
+def test_update_todo_full_replace(client):
+    # Step 1: Log in to get our auth token
+    login_response = client.post(
+        "/users/login",
+        data={"username": "tester", "password": "supersecretpassword"}
+    )
+    access_token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    # Step 2: Change both the task name and its completion status via PUT
+    response = client.put(
+        "/todos/1",  # We target the todo we created in our previous test
+        json={"name": "Completed the backend blueprint!", "completed": True},
+        headers=headers
+    )
+    assert response.status_code == 200
+
+    updated_data = response.json()
+    assert updated_data["name"] == "Completed the backend blueprint!"
+    assert updated_data["completed"] is True
+
+
+def test_patch_todo_partial_update(client):
+    # Step 1: Log in to get our auth token
+    login_response = client.post(
+        "/users/login",
+        data={"username": "tester", "password": "supersecretpassword"}
+    )
+    access_token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    # Step 2: Use PATCH to toggle ONLY the completed status back to False without providing a name
+    response = client.patch(
+        "/todos/1",
+        json={"completed": False},
+        headers=headers
+    )
+    assert response.status_code == 200
+
+    patched_data = response.json()
+    # The name should remain exactly what it was before, unchanged
+    assert patched_data["name"] == "Completed the backend blueprint!"
+    assert patched_data["completed"] is False
+
+
+def test_update_todo_not_found(client):
+    # Step 1: Log in to get our auth token
+    login_response = client.post(
+        "/users/login",
+        data={"username": "tester", "password": "supersecretpassword"}
+    )
+    access_token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    # Step 2: Try to update a task ID that does not exist in our test database
+    response = client.put(
+        "/todos/9999",
+        json={"name": "Non-existent task", "completed": True},
+        headers=headers
+    )
+    # The global exception handler should catch our custom error and cleanly throw a 404
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Todo with id 9999 not found"

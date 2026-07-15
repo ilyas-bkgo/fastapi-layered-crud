@@ -6,7 +6,7 @@ from database import init_db
 from routers import todos, users
 from exceptions import UserNotFoundError, ItemNotFounError
 
-app = FastAPI()
+app = FastAPI(title="Learning FastAPI")
 init_db()
 
 

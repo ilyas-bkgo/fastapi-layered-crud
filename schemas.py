@@ -60,6 +60,10 @@ class ItemResponse(BaseModel):
     #     from_attributes = True
 
 
+class ItemUpdate(BaseModel):
+    name: str | None = None
+    completed: bool | None = None
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str
